@@ -12,9 +12,15 @@
 #define MEMORY_SIZE (int)pow(2,22)	//4MB
 #define BLOCK_SIZE (int)pow(2,10)	//1 KB
 //stop simulation these many allocations ??
-#define REQUIRED_ALLOCATIONS (int)pow(2,5)
+#define REQUIRED_ALLOCATIONS (int)pow(2,10)
 //for easy use of max index of memory
 #define MAX_INDEX MEMORY_SIZE/BLOCK_SIZE
+
+typedef struct {
+	int start;
+	int size;
+}hole_desc;
+
 //generate N processes of rand()%91+10 KB 
 void generate_procs(int N);
 //allocate memory to each process free_memory() 
@@ -24,8 +30,8 @@ int find_best_index(int size);
 //deallocate N oldest processes
 void free_memory(void);
 //return size of available hole
-void update_hole(void);
 int total_available_hole(void);
+hole_desc* get_cur_holes(void);
 
 /*memory arranged as [1,-1,4,2,-1]
 	edge cases:
@@ -41,7 +47,7 @@ int *MEMORY;
 int num_allocated=0;
 int batch = 0;  //process batch number
 int min_batch = 0; //oldest process batch number 
-int *hole;			//indexed [size1,size2,....] of holes
+int num_holes = 0;
 
 int main(int argc, char *argv[]){
 	//invalid input handling
@@ -61,8 +67,9 @@ int main(int argc, char *argv[]){
 	gettimeofday(&seed,NULL);
 	srand(seed.tv_usec);
 	//simulate until crtiteria met 
-	while(num_allocated<REQUIRED_ALLOCATIONS)
+	while(num_allocated<REQUIRED_ALLOCATIONS){
 		generate_procs(N);
+	}
 	return 0;
 } 
 /*generates N processes and and free_memory() 
@@ -79,9 +86,12 @@ void generate_procs(int N){
 		total_size+=size;
 		process[i][0] = size;
 	}
-	while (total_available_hole()<total_size)
+	i = 0;
+	while (total_available_hole()<total_size){
+			//printf("%d before..\n",total_available_hole() );
 			free_memory();
-
+			//printf("%d after.....\n\n",total_available_hole() );
+	}
 	//allocate memory for each process 
 	for (i = 0; i < N; i++)
 		allocate_proc(batch_num,process[i][0]);
@@ -94,7 +104,7 @@ void allocate_proc(int batch_num, int size){
 	int start = find_best_index(size);
 	//refer to comment at top to understand memory layout
 	int i = 0;
-	for (i = start+2; i <start+size-2; i++)
+	for (i = start+2; i <start+size-1; i++)
 		MEMORY[i] = 1; //fill used up memory blocks with 1
 	MEMORY[start] = batch_num;
 	MEMORY[start+1]= size;
@@ -102,8 +112,9 @@ void allocate_proc(int batch_num, int size){
 	num_allocated++; 
 }
 //free the oldest batch processes
-void free_memory(){
+void free_memory(void){
 	int i = 0, j = 0;
+	int found = 0;
 	for (i = 0; i <MAX_INDEX; i++){
 		/*
 			Memory looks something like:
@@ -111,33 +122,49 @@ void free_memory(){
 		
 		*/
 		if(MEMORY[i]==min_batch && MEMORY[i+1]>9){
-			for (j = i; j < i+MEMORY[i+1]-1; j++)
+			for (j = i; j < i+MEMORY[i+1]; j++)
 				MEMORY[j] = 0;
+			i = j;
+			found = 1;
+			
 		}
 	}
-	min_batch++;
+	if(found)
+		min_batch++;
 }
 
 //return start index acc to best fit algorithm 
 int find_best_index(int size){
 	int allocated = 0; 
 	int cur_index = 0;
-	int cur_min = pow(2,30);
+	//init max mem to high
+	int cur_min = pow(2,20);
 	int i = 0;
+	int cur_hole;
+	hole_desc *holes;
 	while (!allocated){
-		for (i = 0; i <MAX_INDEX; i++){
-			if(hole[i]>size && hole[i]<cur_min){
-				cur_min = hole[i];
-				cur_index = i;	
+		//struct of holes  holes.size, holes.start
+		holes = get_cur_holes();
+		//search holes for appropriate best fit
+		for (i = 0; i<num_holes;i++){
+			cur_hole = holes[i].size;
+			if(cur_hole<cur_min && cur_hole >size){
 				allocated = 1;
+				cur_min = cur_hole;
+				cur_index = holes[i].start;;
 			}
-
-
 		}
-		//process doesn't fit any available hole
+		//if no best index found:
 		if(!allocated)
-			free_memory();	
-	}
+			free_memory();			
+		//free holes
+		for (i = 0; i < num_holes; i++)
+				free(&holes[i]);			
+		num_holes = 0;
+	
+	}		
+	
+	//after allocated
 	return cur_index;
 }
 /*
@@ -161,8 +188,9 @@ int total_available_hole(void){
 	int hole_size = 0;
 	for (int i = 0; i < MAX_INDEX-1;i++){
 		if (MEMORY[i]==0 && MEMORY[i+1]==0){
+			hole_size++;
 			int j = i+1;
-			while(MEMORY[j]==0){
+			while(MEMORY[j]==0 && j<MAX_INDEX){
 				hole_size+=1;
 				j++;
 			}
@@ -172,4 +200,26 @@ int total_available_hole(void){
 	return hole_size;
 }
 
+hole_desc* get_cur_holes(void){
+	hole_desc *holes = (hole_desc*)malloc(sizeof(hole_desc)*MAX_INDEX);
+	int start;
+	int hole_ix = 0;
+	int j;
+	for (int i = 0; i < MAX_INDEX-1; i++){
+		if(MEMORY[i]==0&&MEMORY[i+1]==0){
+			num_holes++;
+			start = i;
+			j = i+1;
+			while(MEMORY[j]==0 && j<MAX_INDEX)
+				j++;
+			i = j;
+			holes[hole_ix] = *((hole_desc*)malloc(sizeof(hole_desc)));
+			holes[hole_ix].start = start;
+			holes[hole_ix].size = i - start +1;
+			printf("hole size, %d\n",holes[hole_ix].size );
+			hole_ix++;
+		}
+	}
+	return holes;
+}
 
