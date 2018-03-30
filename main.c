@@ -56,11 +56,6 @@ int main(int argc, char *argv[]){
 	MEMORY = (int*)malloc((sizeof(int)*MAX_INDEX));
 	for (i = 0; i < MAX_INDEX; i++)
 		MEMORY[i]=0;
-	//init hole
-	hole = (int*)malloc(sizeof(int)*MAX_INDEX);
-	for (i = 0; i < MAX_INDEX; i++)
-		hole[i]= 0;	
-	update_hole();
 	//random number seed
 	struct timeval seed;
 	gettimeofday(&seed,NULL);
@@ -76,7 +71,7 @@ void generate_procs(int N){
 	int total_size = 0;
 	//batch is global batch
 	int batch_num = batch;
-	//[pid][size]
+	//[pid][col]
 	int process[N][1];
 	int i = 0;
 	for (i = 0; i < N; i++){
@@ -84,9 +79,9 @@ void generate_procs(int N){
 		total_size+=size;
 		process[i][0] = size;
 	}
-	//self explanatory :) 
 	while (total_available_hole()<total_size)
-		free_memory();
+			free_memory();
+
 	//allocate memory for each process 
 	for (i = 0; i < N; i++)
 		allocate_proc(batch_num,process[i][0]);
@@ -105,7 +100,6 @@ void allocate_proc(int batch_num, int size){
 	MEMORY[start+1]= size;
 	MEMORY[start+size-1] = -1;
 	num_allocated++; 
-	update_hole();
 }
 //free the oldest batch processes
 void free_memory(){
@@ -122,7 +116,6 @@ void free_memory(){
 		}
 	}
 	min_batch++;
-	update_hole();
 }
 
 //return start index acc to best fit algorithm 
@@ -138,6 +131,8 @@ int find_best_index(int size){
 				cur_index = i;	
 				allocated = 1;
 			}
+
+
 		}
 		//process doesn't fit any available hole
 		if(!allocated)
@@ -145,7 +140,7 @@ int find_best_index(int size){
 	}
 	return cur_index;
 }
-
+/*
 void update_hole(void){
 	int i = 0, j = 0;
 	int size = 0;
@@ -155,18 +150,25 @@ void update_hole(void){
 			while(MEMORY[j]==0 && j<MAX_INDEX){
 				size++;
 				j++;
+
 			}
 			hole[i] = size;
 		}	
 	}
 }
-
-int total_available_hole(){
-	int hole_size = 0; //1 block = 1 hole
-	int i = 0;
-	for (i = 0; i < MAX_INDEX; i++)
-		if(MEMORY[i]==0 && MEMORY[i+1]==0)
-			hole_size+=1;
+*/
+int total_available_hole(void){
+	int hole_size = 0;
+	for (int i = 0; i < MAX_INDEX-1;i++){
+		if (MEMORY[i]==0 && MEMORY[i+1]==0){
+			int j = i+1;
+			while(MEMORY[j]==0){
+				hole_size+=1;
+				j++;
+			}
+			i = j;
+		}
+	}
 	return hole_size;
 }
 
