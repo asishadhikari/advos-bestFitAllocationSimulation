@@ -14,7 +14,7 @@
 //stop simulation these many allocations ??
 #define REQUIRED_ALLOCATIONS (int)pow(2,10)
 //for easy use of max index of memory
-#define MAX_INDEX MEMORY_SIZE/BLOCK_SIZE
+#define NUM_MEM_BLOCKS MEMORY_SIZE/BLOCK_SIZE
 
 typedef struct {
 	int start;
@@ -59,8 +59,8 @@ int main(int argc, char *argv[]){
 	int N = atoi(argv[1]);
 	int i = 0, j = 0;	
 	//initialise memory 
-	MEMORY = (int*)malloc((sizeof(int)*MAX_INDEX));
-	for (i = 0; i < MAX_INDEX; i++)
+	MEMORY = (int*)malloc((sizeof(int)*NUM_MEM_BLOCKS));
+	for (i = 0; i < NUM_MEM_BLOCKS; i++)
 		MEMORY[i]=0;
 	//random number seed
 	struct timeval seed;
@@ -121,7 +121,7 @@ void allocate_proc(int batch_num, int size){
 	if(hole_size<size){
 		printf("Hole not big enough\n");
 		//print the Memory
-		for (int i = 0; i < MAX_INDEX; i++)
+		for (int i = 0; i < NUM_MEM_BLOCKS; i++)
 		{
 			printf("%d, ",MEMORY[i]);
 			if(i==100)
@@ -144,7 +144,7 @@ void allocate_proc(int batch_num, int size){
 void free_memory(void){
 	int i = 0, j = 0;
 	int found = 0;
-	for (i = 0; i < MAX_INDEX-1; i++){
+	for (i = 0; i < NUM_MEM_BLOCKS-1; i++){
 		/*
 			MEMORY looks something like:
 		[...,1,1,4,12,1,1,1,1,1,1,1,1,1,1,0,0,0,3,61,1,...]
@@ -175,13 +175,13 @@ int *find_best_index(int size){
 	int cur_index = 0;
 	int l=0,r;
 	int *answer = (int*)malloc(sizeof(int));  //[index,size]
-	for (l = 0; l < MAX_INDEX-1 && r< MAX_INDEX; l++){
+	for (l = 0; l < NUM_MEM_BLOCKS-1 && r< NUM_MEM_BLOCKS; l++){
 		//[**,.,.,.,]
 		r = l+1;
 		//reset cur_hole
 		cur_hole_size = 0;
 		//move right index and get best suited hole size in MEMORY
-		while(MEMORY[l]==0 && MEMORY[r]==0 && r<MAX_INDEX){
+		while(MEMORY[l]==0 && MEMORY[r]==0 && r<NUM_MEM_BLOCKS){
 			r++;
 			cur_hole_size++;
 		}
@@ -237,10 +237,10 @@ int *find_best_index(int size){
 void update_hole(void){
 	int i = 0, j = 0;
 	int size = 0;
-	for (int i = 0; i < MAX_INDEX; i++){
+	for (int i = 0; i < NUM_MEM_BLOCKS; i++){
 		if(MEMORY[i]==0 && MEMORY[i+1]==0){
 			j = i+1;
-			while(MEMORY[j]==0 && j<MAX_INDEX){
+			while(MEMORY[j]==0 && j<NUM_MEM_BLOCKS){
 				size++;
 				j++;
 
@@ -255,12 +255,12 @@ int total_available_hole(void){
 	int r = 0;
 	printf("At least got here\n");
 	int found = 0;
-	for (int l = 0; l < MAX_INDEX-1;l++){
+	for (int l = 0; l < NUM_MEM_BLOCKS-1;l++){
 		r = l+1;
 		printf("Eh y u no come here\n");	
 		//starting of a hole
 		if (MEMORY[l]==0 && MEMORY[r]==0){
-			while(MEMORY[r]==0 && r<MAX_INDEX){
+			while(MEMORY[r]==0 && r<NUM_MEM_BLOCKS){
 				hole_size++;
 				r++;
 			}
@@ -274,16 +274,16 @@ int total_available_hole(void){
 }
 /*
 hole_desc* get_cur_holes(void){
-	hole_desc *holes = (hole_desc*)malloc(sizeof(hole_desc)*MAX_INDEX);
+	hole_desc *holes = (hole_desc*)malloc(sizeof(hole_desc)*NUM_MEM_BLOCKS);
 	int start;
 	int hole_ix = 0;
 	int j;
-	for (int i = 0; i < MAX_INDEX-1; i++){
+	for (int i = 0; i < NUM_MEM_BLOCKS-1; i++){
 		if(MEMORY[i]==0&&MEMORY[i+1]==0){
 			num_holes++;
 			start = i;
 			j = i+1;
-			while(MEMORY[j]==0 && j<MAX_INDEX)
+			while(MEMORY[j]==0 && j<NUM_MEM_BLOCKS)
 				j++;
 			i = j;
 			holes[hole_ix] = *((hole_desc*)malloc(sizeof(hole_desc)));
