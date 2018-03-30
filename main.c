@@ -41,13 +41,8 @@ int *MEMORY;
 int num_allocated=0;
 int batch = 0;  //process batch number
 int min_batch = 0; //oldest process batch number 
+int *hole = (int*)malloc(sizeof(int)*MAX_INDEX);
 
-typedef struct{
-	int start;
-	int size;
-}hole_desc;
-hole_desc *hole;  //sorted array of holes
-int num_holes = 0;
 int main(int argc, char *argv[]){
 	//invalid input handling
 	if (argc==1 || argc > 2){
@@ -62,10 +57,9 @@ int main(int argc, char *argv[]){
 	for (i = 0; i < MAX_INDEX; i++)
 		MEMORY[i]=0;
 	//init hole
-	hole = (hole_desc*)malloc(sizeof(hole));
-	hole[0].start = 0;
-	hole[0].size = MAX_INDEX;
-	num_holes++;
+	for (i = 0; i < MAX_INDEX; i++)
+		hole[i] = 0;
+	hole[0] = MAX_INDEX;
 	//random number seed
 	struct timeval seed;
 	gettimeofday(&seed,NULL);
@@ -136,7 +130,14 @@ int find_best_index(int size){
 }
 
 void update_hole(void){
-	
+	int i = 0, j = 0;
+	int size = 0;
+	for (int i = 0; i < MAX_INDEX; i++)
+		if(MEMORY[i]==0 && MEMORY[i+1]==0){
+			while(MEMORY[j]==0)
+				size++;
+			hole[i] = size;
+		}	
 }
 
 int total_available_hole(){
