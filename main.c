@@ -12,7 +12,7 @@
 #define MEMORY_SIZE (int)pow(2,22)	//4MB
 #define BLOCK_SIZE (int)pow(2,10)	//1 KB
 //stop simulation these many allocations ??
-#define REQUIRED_ALLOCATIONS (int)pow(2,20)
+#define REQUIRED_ALLOCATIONS (int)pow(2,15)
 //for easy use of max index of memory
 #define NUM_MEM_BLOCKS MEMORY_SIZE/BLOCK_SIZE
 
@@ -58,7 +58,11 @@ int main(int argc, char *argv[]){
 	gettimeofday(&seed,NULL);
 	srand(seed.tv_usec);
 	//array of total hole for each batch
-	holes = (int*)malloc(sizeof(int)*REQUIRED_ALLOCATIONS);
+	//batch will always be less than REQUIRED_ALLOCATIONS/N+N
+	holes = (int*)malloc(sizeof(int)*(REQUIRED_ALLOCATIONS/N+N));
+	for(i = 0; i<REQUIRED_ALLOCATIONS/N+N;i++)
+		holes[i]=0;
+
 	//simulate until crtiteria met 
 	while(num_allocated<REQUIRED_ALLOCATIONS){
 		generate_procs(N);
@@ -67,9 +71,25 @@ int main(int argc, char *argv[]){
 		holes[batch-1] = total_available_hole();
 		
 	}
-	for (int i = 0; i < NUM_MEM_BLOCKS; i++)
-		printf("%d ",MEMORY[i]);
 
+	//analysis 
+	int sum = 0;
+
+	int mean, sd;
+	//calculate mean
+	for (i = 0; i <=batch; i++){
+		sum+=holes[i];
+	}
+	mean = sum/(batch+1);
+
+	long int cur_dif=0;
+	//calculate standard deviation
+	for (i = 0; i <= batch; i++)
+		cur_dif += (long int)pow((holes[i]-mean),2);
+
+	sd = (int)pow((double)sum/N,0.5);
+	printf("Average holes size of %d batch size is %d\n",N,mean);
+	printf("standard deviation is %d \n",sd);
 	return 0;
 } 
 /*generates N processes and and free_memory() 
@@ -147,7 +167,8 @@ void free_memory(void){
 	if(found)
 		min_batch++;
 	else{
-		printf("This should never execute min batch is%d cur batch is %d\n",min_batch,batch);
+		printf("Sorry, not sufficient memory to fit this batch's requirement allocation failed! Current min batch is%d cur batch is %d\n",min_batch,batch);
+		printf("Look at the beautiful MEMORY for now ;)\n");
 		for (int i = 0; i < NUM_MEM_BLOCKS; i++)
 		{
 			printf("%d  ",MEMORY[i]);
