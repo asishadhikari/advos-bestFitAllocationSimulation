@@ -12,7 +12,7 @@
 #define MEMORY_SIZE (int)pow(2,22)	//4MB
 #define BLOCK_SIZE (int)pow(2,10)	//1 KB
 //stop simulation these many allocations ??
-#define REQUIRED_ALLOCATIONS (int)pow(2,5)
+#define REQUIRED_ALLOCATIONS (int)pow(2,10)
 //for easy use of max index of memory
 #define NUM_MEM_BLOCKS MEMORY_SIZE/BLOCK_SIZE
 
@@ -69,6 +69,18 @@ int main(int argc, char *argv[]){
 	//simulate until crtiteria met 
 	while(num_allocated<REQUIRED_ALLOCATIONS)
 		generate_procs(N);
+	printf("before freeing\n");
+	for (int i = 0; i < NUM_MEM_BLOCKS; i++)
+	{
+		printf("%d  ",MEMORY[i]);
+	}
+	free_memory();
+	printf("\n\n\nAfter freeing\n");
+	for (int i = 0; i < NUM_MEM_BLOCKS; i++)
+	{
+		printf("%d  ",MEMORY[i]);
+	}
+	
 	return 0;
 } 
 /*generates N processes and and free_memory() 
@@ -115,8 +127,6 @@ void allocate_proc(int batch_num, int size){
 	int i = 0;
 	for (i = start; i < start+size-1; i++)
 		MEMORY[i] = 1; //set used space to 1
-	//last index has -1 for last memory index
-		//[batch_num,n,[start+2,start+size]]
 	MEMORY[start] = batch_num;
 	MEMORY[start+1]= size;
 	num_allocated++; 
@@ -144,13 +154,42 @@ void free_memory(void){
 	if(found)
 		min_batch++;
 	if(!found){
-		printf("This should never execute\n");
+		printf("This should never execute batch is %d\n",min_batch);
+		for (int i = 0; i < NUM_MEM_BLOCKS; i++)
+		{
+			printf("%d  ",MEMORY[i]);
+		}
 		exit(-1);
 	}
 }
 
 //return start index acc to best fit algorithm 
 int *find_best_index(int size){
+	int min_hole_size= 1<<20;
+	int cur_hole_size = 0;
+	int cur_index = 0;
+	int l,r;
+	int *answer = (int*)malloc(sizeof(int)*2);  //[index,size]
+	for (l = 0; l < NUM_MEM_BLOCKS-1 && r< NUM_MEM_BLOCKS; l++){
+		//[**,.,.,.,]
+		r = l+1;
+		//reset cur_holes
+		//move right index and get best suited hole size in MEMORY
+		while(MEMORY[l]==0 && MEMORY[r]==0 && r<NUM_MEM_BLOCKS)
+			r++;
+		cur_hole_size = r-l;
+		if (cur_hole_size < min_hole_size && cur_hole_size > size){
+			min_hole_size = cur_hole_size;
+			cur_index = l;	
+		}
+		l = r;
+		cur_hole_size=0;
+	}
+	answer[0] = cur_index;
+	answer[1] = min_hole_size;
+	return answer;
+}
+	/*
 	int allocated = 0; 
 	int cur_index = 0;
 	//init max mem to high
@@ -183,33 +222,7 @@ int *find_best_index(int size){
 	//after allocated
 	return cur_index;
 	}
-	/*int min_hole_size= 1<<20;
-	int cur_hole_size;
-	int cur_index = 0;
-	int l,r;
-	int *answer = (int*)malloc(sizeof(int));  //[index,size]
-	for (l = 0; l < NUM_MEM_BLOCKS-1 && r< NUM_MEM_BLOCKS; l++){
-		//[**,.,.,.,]
-		r = l+1;
-		//reset cur_hole
-		cur_hole_size = 0;
-		//move right index and get best suited hole size in MEMORY
-		while(MEMORY[l]==0 && MEMORY[r]==0 && r<NUM_MEM_BLOCKS){
-			r++;
-			cur_hole_size++;
-		}
-		if (cur_hole_size<min_hole_size && cur_hole_size>size){
-			min_hole_size = cur_hole_size;
-			cur_index = l;	
-		}
-		l = r;
-	}
-	answer[0] = cur_index;
-	answer[1] = min_hole_size;
-	printf("%d curr hole\n",min_hole_size );
-	printf("%d is size requested\n",size);
-	return answer;
-}*/
+	*/
 
 
 
@@ -246,7 +259,6 @@ int total_available_hole(void){
 			found=1;
 		}
 	}
-
 	return hole_size;
 }
 /*
