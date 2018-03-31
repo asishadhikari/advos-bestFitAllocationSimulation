@@ -12,7 +12,7 @@
 #define MEMORY_SIZE (int)pow(2,22)	//4MB
 #define BLOCK_SIZE (int)pow(2,10)	//1 KB
 //stop simulation these many allocations ??
-#define REQUIRED_ALLOCATIONS (int)pow(2,15)
+#define REQUIRED_ALLOCATIONS (int)pow(2,20)
 //for easy use of max index of memory
 #define NUM_MEM_BLOCKS MEMORY_SIZE/BLOCK_SIZE
 
