@@ -69,27 +69,27 @@ int main(int argc, char *argv[]){
 		//record hole size
 		//batch is updated by generate_process()
 		holes[batch-1] = total_available_hole();
-		
 	}
 
-	//analysis 
-	int sum = 0;
-
-	int mean, sd;
+	//analysis long beacause max power of 2 possible for sum ~ 32 
+	long sum = 0;
+	long mean, sd;
 	//calculate mean
 	for (i = 0; i <=batch; i++){
 		sum+=holes[i];
 	}
 	mean = sum/(batch+1);
-
-	long int cur_dif=0;
+	printf("Average holes size of %d batch size is %ld\n",N,mean);
+	
+	long cur_sum=0;
+	long variance;
 	//calculate standard deviation
 	for (i = 0; i <= batch; i++)
-		cur_dif += (long int)pow((holes[i]-mean),2);
-
-	sd = (int)pow((double)sum/N,0.5);
-	printf("Average holes size of %d batch size is %d\n",N,mean);
-	printf("standard deviation is %d \n",sd);
+		cur_sum += (long)pow((holes[i]-mean),2);
+	 variance = (long)cur_sum/batch;
+	sd = (long)pow((long)variance,0.5);//
+	printf("standard deviation is %ld \n",sd);
+	printf("Average + 4* sd is %ld\n",mean+4*sd );
 	return 0;
 } 
 /*generates N processes and and free_memory() 
