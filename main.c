@@ -12,7 +12,7 @@
 #define MEMORY_SIZE (int)pow(2,22)	//4MB
 #define BLOCK_SIZE (int)pow(2,10)	//1 KB
 //stop simulation these many allocations ??
-#define REQUIRED_ALLOCATIONS (int)pow(2,10)
+#define REQUIRED_ALLOCATIONS (int)pow(2,20)
 //for easy use of max index of memory
 #define NUM_MEM_BLOCKS MEMORY_SIZE/BLOCK_SIZE
 
@@ -38,6 +38,7 @@ int num_allocated=0;
 int batch = 0;  //process batch number
 int min_batch = 0; //oldest process batch number 
 int num_holes = 0;
+int *holes; //for recording hole size for each batch
 
 int main(int argc, char *argv[]){
 	//invalid input handling
@@ -56,9 +57,16 @@ int main(int argc, char *argv[]){
 	struct timeval seed;
 	gettimeofday(&seed,NULL);
 	srand(seed.tv_usec);
+	//array of total hole for each batch
+	holes = (int*)malloc(sizeof(int)*REQUIRED_ALLOCATIONS);
 	//simulate until crtiteria met 
-	while(num_allocated<REQUIRED_ALLOCATIONS)
+	while(num_allocated<REQUIRED_ALLOCATIONS){
 		generate_procs(N);
+		//record hole size
+		//batch is updated by generate_process()
+		holes[batch-1] = total_available_hole();
+		
+	}
 	for (int i = 0; i < NUM_MEM_BLOCKS; i++)
 		printf("%d ",MEMORY[i]);
 
@@ -114,7 +122,6 @@ void allocate_proc(int batch_num, int size){
 }
 //free the oldest batch processes
 void free_memory(void){
-	printf("Total available hole is %d\n",total_available_hole());
 	int l = 0, r = 1;
 	int found = 0;
 	int i;
@@ -145,7 +152,6 @@ void free_memory(void){
 		{
 			printf("%d  ",MEMORY[i]);
 		}
-		printf("Total available hole  %d\n",total_available_hole());
 		exit(-1);
 	}
 }
@@ -189,60 +195,7 @@ int *find_best_index(int size){
 	answer[1] = min_hole_size;
 	return answer;
 }
-	/*
-	int allocated = 0; 
-	int cur_index = 0;
-	//init max mem to high
-	int cur_min = pow(2,20);
-	int i = 0;
-	int cur_hole;
-	hole_desc *holes;
-	while (!allocated){
-		//struct of holes  holes.size, holes.start
-		holes = get_cur_holes();
-		//search holes for appropriate best fit
-		for (i = 0; i<num_holes;i++){
-			cur_hole = holes[i].size;
-			if(cur_hole<cur_min && cur_hole >size){
-				allocated = 1;
-				cur_min = cur_hole;
-				cur_index = holes[i].start;;
-			}
-		}
-		//if no best index found:
-		if(!allocated)
-			free_memory();			
-		//free holes
-		for (i = 0; i < num_holes; i++)
-				free(&holes[i]);			
-		num_holes = 0;
-	
-	}		
-	
-	//after allocated
-	return cur_index;
-	}
-	*/
 
-
-
-/*
-void update_hole(void){
-	int i = 0, j = 0;
-	int size = 0;
-	for (int i = 0; i < NUM_MEM_BLOCKS; i++){
-		if(MEMORY[i]==0 && MEMORY[i+1]==0){
-			j = i+1;
-			while(MEMORY[j]==0 && j<NUM_MEM_BLOCKS){
-				size++;
-				j++;
-
-			}
-			hole[i] = size;
-		}	
-	}
-}
-*/
 int total_available_hole(void){
 	int hole_size = 0;
 	int l, r = 0;
@@ -259,27 +212,3 @@ int total_available_hole(void){
 	}
 	return hole_size;
 }
-/*
-hole_desc* get_cur_holes(void){
-	hole_desc *holes = (hole_desc*)malloc(sizeof(hole_desc)*NUM_MEM_BLOCKS);
-	int start;
-	int hole_ix = 0;
-	int j;
-	for (int i = 0; i < NUM_MEM_BLOCKS-1; i++){
-		if(MEMORY[i]==0&&MEMORY[i+1]==0){
-			num_holes++;
-			start = i;
-			j = i+1;
-			while(MEMORY[j]==0 && j<NUM_MEM_BLOCKS)
-				j++;
-			i = j;
-			holes[hole_ix] = *((hole_desc*)malloc(sizeof(hole_desc)));
-			holes[hole_ix].start = start;
-			holes[hole_ix].size = i - start +1;
-			hole_ix++;
-		}
-	}
-	return holes;
-}
-
-*/
