@@ -73,23 +73,23 @@ int main(int argc, char *argv[]){
 
 	//analysis long beacause max power of 2 possible for sum ~ 32 
 	long sum = 0;
-	long mean, sd;
+	float mean, sd;
 	//calculate mean
 	for (i = 0; i <=batch; i++){
 		sum+=holes[i];
 	}
-	mean = sum/(batch+1);
-	printf("Average holes size of %d batch size is %ld\n",N,mean);
+	mean = (float)sum/(batch+1.0);
+	printf("Average holes size of %d batch size is %.3f \n",N,mean);
 	
 	long cur_sum=0;
 	long variance;
 	//calculate standard deviation
 	for (i = 0; i <= batch; i++)
-		cur_sum += (long)pow((holes[i]-mean),2);
+		cur_sum += (long)pow((holes[i]-(int)mean),2);
 	 variance = (long)cur_sum/batch;
-	sd = (long)pow((long)variance,0.5);//
-	printf("standard deviation is %ld \n",sd);
-	printf("Average + 4* sd is %ld\n",mean+4*sd );
+	sd = (float)pow((long)variance,0.5);//
+	printf("standard deviation is %.3f \n",sd);
+	printf("Average + 4* sd is %.3f\n",mean+4*sd );
 	return 0;
 } 
 /*generates N processes and and free_memory() 
